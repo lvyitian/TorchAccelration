@@ -6,8 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import top.dsbbs2.common.com.google.gson.Gson;
+import top.dsbbs2.common.com.google.gson.GsonBuilder;
 
 public class SimpleConfig<T> implements IConfig<T> {
 	public File conf=null;
