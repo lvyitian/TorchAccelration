@@ -125,7 +125,7 @@ public class Main extends JavaPlugin implements Listener {
         if(this.config.getConfig().redstone_torch.enable)
             game.getResourceSpawners().stream().filter(i->Main.contains(i.getLocation(),changedLoc)).filter(i->!acceleratedSpawners.containsKey(i)||this.config.getConfig().redstone_torch.speed>acceleratedSpawners.get(i)).filter(i->Main.has(i.getLocation(),Material.REDSTONE_TORCH_ON)||Main.has(i.getLocation(),Material.REDSTONE_TORCH_OFF)).forEach(i->{
                 acceleratedSpawners.put(i,this.config.getConfig().redstone_torch.speed);
-                i.setInterval((int)Math.round(i.getInterval()/this.config.getConfig().redstone_torch.speed));
+                i.setInterval((int)Math.round(originalInterval.computeIfAbsent(i,ResourceSpawner::getInterval)/this.config.getConfig().redstone_torch.speed));
                 updateResSpawnTaskPeriod(i);
                 if(this.config.getConfig().particle)
                     particleTasks.computeIfAbsent(i,i2->Bukkit.getScheduler().runTaskTimer(this,()->{
