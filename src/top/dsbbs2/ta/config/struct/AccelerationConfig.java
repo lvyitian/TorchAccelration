@@ -14,7 +14,7 @@ public class AccelerationConfig {
 		public boolean enable=true;
 		public double speed;
 	}
-	public TorchLike torch=new TorchLike(true,200);
-	public TorchLike redstone_torch=new TorchLike(true,300);
+	public TorchLike torch=new TorchLike(true,2);
+	public TorchLike redstone_torch=new TorchLike(true,3);
 	public boolean particle=true;
 }

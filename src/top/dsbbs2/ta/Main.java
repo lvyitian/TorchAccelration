@@ -22,6 +22,9 @@ import org.bukkit.util.Vector;
 import top.dsbbs2.ta.config.SimpleConfig;
 import top.dsbbs2.ta.config.struct.AccelerationConfig;
 
+import java.lang.reflect.AccessibleObject;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +47,7 @@ public class Main extends JavaPlugin implements Listener {
     public void onDisable()
     {
         this.originalInterval.forEach(ResourceSpawner::setInterval);
+        this.originalInterval.keySet().forEach(Main::updateResSpawnTaskPeriod);
         this.originalInterval.clear();
         this.particleTasks.values().forEach(BukkitTask::cancel);
         this.particleTasks.clear();
@@ -57,12 +61,53 @@ public class Main extends JavaPlugin implements Listener {
     {
         return Main.offsets.stream().map(resCent::add).anyMatch(changedLoc::equals);
     }
+    @FunctionalInterface
+    public static interface ThrowsRunnable extends Runnable {
+        void invoke() throws Throwable;
+        @Override
+        default void run() {
+            try{
+                this.invoke();
+            }catch(Throwable t){throw new RuntimeException(t);}
+        }
+        static ThrowsRunnable of(ThrowsRunnable r){return r;}
+    }
+    @FunctionalInterface
+    public static interface ThrowsConsumer<T> extends Consumer<T> {
+        void consume(T obj) throws Throwable;
+        @Override
+        default void accept(T obj) {
+            try{
+                this.consume(obj);
+            }catch(Throwable t){throw new RuntimeException(t);}
+        }
+        static <T> ThrowsConsumer<T> of(ThrowsConsumer<T> r){return r;}
+    }
+    @FunctionalInterface
+    public static interface DefaultNullSupplier<T> extends Supplier<T> {
+        T supply() throws Throwable;
+        @Override
+        default T get() {
+            try{
+                return this.supply();
+            }catch(Throwable t){return null;}
+        }
+        static <T> DefaultNullSupplier<T> of(DefaultNullSupplier<T> s){return s;}
+    }
+    public static <T extends AccessibleObject> T makeAccessible(T acc){
+        acc.setAccessible(true);
+        return acc;
+    }
+    public static void updateResSpawnTaskPeriod(ResourceSpawner spawner){
+        spawner.getGame().getRunningTasks().stream().filter(i->Objects.equals(DefaultNullSupplier.of(()->i.getClass().getField("task").get(i)).get(),spawner)).filter(i->i.getClass().getName().endsWith(".scheduler.CraftTask")).forEach(ThrowsConsumer.of(i->makeAccessible(i.getClass().getDeclaredMethod("setPeriod",long.class)).invoke(i,spawner.getInterval())));
+    }
     public void applyTorch(Game game,Location changedLoc)
     {
         if(this.config.getConfig().torch.enable)
             game.getResourceSpawners().stream().filter(i->Main.contains(i.getLocation(),changedLoc)).filter(i->!acceleratedSpawners.containsKey(i)||this.config.getConfig().torch.speed>acceleratedSpawners.get(i)).filter(i->Main.has(i.getLocation(),Material.TORCH)).forEach(i->{
                 acceleratedSpawners.put(i,this.config.getConfig().torch.speed);
                 i.setInterval((int)Math.round(originalInterval.computeIfAbsent(i,ResourceSpawner::getInterval)/this.config.getConfig().torch.speed));
+                updateResSpawnTaskPeriod(i);
                 if(this.config.getConfig().particle)
                     particleTasks.computeIfAbsent(i,i2->Bukkit.getScheduler().runTaskTimer(this,()->{
                         if(!Objects.equals(game.getState(), GameState.RUNNING)) {
@@ -81,6 +126,7 @@ public class Main extends JavaPlugin implements Listener {
             game.getResourceSpawners().stream().filter(i->Main.contains(i.getLocation(),changedLoc)).filter(i->!acceleratedSpawners.containsKey(i)||this.config.getConfig().redstone_torch.speed>acceleratedSpawners.get(i)).filter(i->Main.has(i.getLocation(),Material.REDSTONE_TORCH_ON)||Main.has(i.getLocation(),Material.REDSTONE_TORCH_OFF)).forEach(i->{
                 acceleratedSpawners.put(i,this.config.getConfig().redstone_torch.speed);
                 i.setInterval((int)Math.round(i.getInterval()/this.config.getConfig().redstone_torch.speed));
+                updateResSpawnTaskPeriod(i);
                 if(this.config.getConfig().particle)
                     particleTasks.computeIfAbsent(i,i2->Bukkit.getScheduler().runTaskTimer(this,()->{
                         if(!Objects.equals(game.getState(), GameState.RUNNING)) {
@@ -96,6 +142,7 @@ public class Main extends JavaPlugin implements Listener {
     public void clearByLoc(Game game,Location changedLoc){
         game.getResourceSpawners().stream().filter(i->Main.contains(i.getLocation(),changedLoc)).filter(acceleratedSpawners::containsKey).forEach(i->{
             i.setInterval(originalInterval.get(i));
+            updateResSpawnTaskPeriod(i);
             originalInterval.remove(i);
             acceleratedSpawners.remove(i);
             particleTasks.get(i).cancel();
@@ -115,6 +162,7 @@ public class Main extends JavaPlugin implements Listener {
     public void onGameEnd(BedwarsGameEndEvent event)
     {
         this.originalInterval.entrySet().stream().filter(i->Objects.equals(i.getKey().getGame(),event.getGame())).forEach(i->i.getKey().setInterval(i.getValue()));
+        this.originalInterval.entrySet().stream().filter(i->Objects.equals(i.getKey().getGame(),event.getGame())).forEach(i->updateResSpawnTaskPeriod(i.getKey()));
         this.originalInterval.entrySet().removeIf(i->Objects.equals(i.getKey().getGame(),event.getGame()));
         this.particleTasks.entrySet().stream().filter(i->Objects.equals(i.getKey().getGame(),event.getGame())).map(Map.Entry::getValue).forEach(BukkitTask::cancel);
         this.particleTasks.entrySet().removeIf(i->Objects.equals(i.getKey().getGame(),event.getGame()));
@@ -124,6 +172,7 @@ public class Main extends JavaPlugin implements Listener {
     public void onGameOver(BedwarsGameOverEvent event)
     {
         this.originalInterval.entrySet().stream().filter(i->Objects.equals(i.getKey().getGame(),event.getGame())).forEach(i->i.getKey().setInterval(i.getValue()));
+        this.originalInterval.entrySet().stream().filter(i->Objects.equals(i.getKey().getGame(),event.getGame())).forEach(i->updateResSpawnTaskPeriod(i.getKey()));
         this.originalInterval.entrySet().removeIf(i->Objects.equals(i.getKey().getGame(),event.getGame()));
         this.particleTasks.entrySet().stream().filter(i->Objects.equals(i.getKey().getGame(),event.getGame())).map(Map.Entry::getValue).forEach(BukkitTask::cancel);
         this.particleTasks.entrySet().removeIf(i->Objects.equals(i.getKey().getGame(),event.getGame()));
