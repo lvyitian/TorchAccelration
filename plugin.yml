@@ -1,5 +1,5 @@
 name: TorchAcceleration
-version: 0.8
+version: 0.9
 author: lvxinlei
 main: top.dsbbs2.ta.Main
 depend: [BedwarsRel]

@@ -55,11 +55,11 @@ public class Main extends JavaPlugin implements Listener {
     }
     public static boolean has(Location loc, Material blockType)
     {
-        return Main.offsets.stream().map(loc::add).map(Location::getBlock).map(Block::getType).anyMatch(blockType::equals);
+        return Main.offsets.stream().map(loc.clone()::add).map(Location::getBlock).map(Block::getType).anyMatch(blockType::equals);
     }
     public static boolean contains(Location resCent, Location changedLoc)
     {
-        return Main.offsets.stream().map(resCent::add).anyMatch(changedLoc::equals);
+        return Main.offsets.stream().map(resCent.clone()::add).anyMatch(changedLoc::equals);
     }
     @FunctionalInterface
     public static interface ThrowsRunnable extends Runnable {
