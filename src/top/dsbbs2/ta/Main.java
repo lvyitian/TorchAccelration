@@ -118,7 +118,14 @@ public class Main extends JavaPlugin implements Listener {
                             particleTasks.remove(task);
                             return;
                         }
-                        i.getLocation().getWorld().spawnParticle(Particle.VILLAGER_HAPPY,i.getLocation(),5);
+                        try {
+                            i.getLocation().getWorld().spawnParticle(Particle.VILLAGER_HAPPY, i.getLocation(), 5);
+                        }catch(NoClassDefFoundError exc){
+                            BukkitTask task=particleTasks.get(i2);
+                            task.cancel();
+                            particleTasks.remove(task);
+                            return;
+                        }
                     },0,8));
             });
     }
@@ -137,7 +144,14 @@ public class Main extends JavaPlugin implements Listener {
                             particleTasks.remove(task);
                             return;
                         }
-                        i.getLocation().getWorld().spawnParticle(Particle.VILLAGER_HAPPY,i.getLocation(),5);
+                        try {
+                            i.getLocation().getWorld().spawnParticle(Particle.VILLAGER_HAPPY, i.getLocation(), 5);
+                        }catch(NoClassDefFoundError exc){
+                            BukkitTask task=particleTasks.get(i2);
+                            task.cancel();
+                            particleTasks.remove(task);
+                            return;
+                        }
                     },0,8));
             });
     }
