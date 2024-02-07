@@ -118,7 +118,7 @@ public class Main extends JavaPlugin implements Listener {
                             particleTasks.remove(task);
                             return;
                         }
-                        i.getLocation().getWorld().playEffect(i.getLocation(), Effect.VILLAGER_PLANT_GROW,5,1);
+                        i.getLocation().getWorld().spawnParticle(Particle.VILLAGER_HAPPY,i.getLocation(),5);
                     },0,8));
             });
     }
@@ -137,7 +137,7 @@ public class Main extends JavaPlugin implements Listener {
                             particleTasks.remove(task);
                             return;
                         }
-                        i.getLocation().getWorld().playEffect(i.getLocation(), Effect.VILLAGER_PLANT_GROW,5,1);
+                        i.getLocation().getWorld().spawnParticle(Particle.VILLAGER_HAPPY,i.getLocation(),5);
                     },0,8));
             });
     }
